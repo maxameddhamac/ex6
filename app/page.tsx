@@ -16,21 +16,21 @@ export default function Home() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <Card>
             <CardHeader>
-              <CardTitle>Authentication</CardTitle>
+              <CardTitle>💬 AI Chat</CardTitle>
               <CardDescription>
-                Test the authentication system
+                Chat with AI Assistant
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Link href="/test-auth">
-                <Button className="w-full">Test Auth</Button>
+              <Link href="/chat">
+                <Button className="w-full">Start Chatting</Button>
               </Link>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Sign In</CardTitle>
+              <CardTitle>🔐 Sign In</CardTitle>
               <CardDescription>
                 Access your account
               </CardDescription>
@@ -44,7 +44,7 @@ export default function Home() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Sign Up</CardTitle>
+              <CardTitle>📝 Sign Up</CardTitle>
               <CardDescription>
                 Create a new account
               </CardDescription>

@@ -100,13 +100,13 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <Button className="w-full" onClick={() => router.push("/chat")}>
-                Start Chatting
+                💬 Start AI Chat
               </Button>
               <Button variant="outline" className="w-full" onClick={() => router.push("/test-auth")}>
-                Test Authentication
+                🔐 Test Authentication
               </Button>
               <Button variant="outline" className="w-full" onClick={() => router.push("/")}>
-                Go Home
+                🏠 Go Home
               </Button>
             </CardContent>
           </Card>

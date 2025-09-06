@@ -61,4 +61,30 @@ export const verification = pgTable("verification", {
 });
 
 
-export const schema = { user, session, account, verification };
+export const conversation = pgTable("conversation", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+export const message = pgTable("message", {
+  id: text("id").primaryKey(),
+  content: text("content").notNull(),
+  role: text("role").notNull(), // 'user' or 'assistant'
+  conversationId: text("conversation_id")
+    .notNull()
+    .references(() => conversation.id, { onDelete: "cascade" }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const schema = { user, session, account, verification, conversation, message };
