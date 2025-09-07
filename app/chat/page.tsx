@@ -5,10 +5,6 @@ import { headers } from 'next/headers';
 
 export default async function NewChatPage() {
   // Get the authenticated session
-//   const session = await auth.api.getSession({
-//     headers: new Headers(),
-//   });
-
   const session = await auth.api.getSession({
     headers: await headers()
 })

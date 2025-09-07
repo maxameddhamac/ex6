@@ -1,4 +1,4 @@
-import { loadMessages, getConversation } from '@/lib/chat-store';
+import { loadChat, getConversation } from '@/lib/chat-store';
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import Chat from '@/components/chat';
@@ -28,8 +28,8 @@ export default async function ChatPage({ params }: PageProps) {
     redirect('/chat');
   }
 
-  // Load messages for this conversation
-  const initialMessages = await loadMessages(id);
+  // Load messages for this conversation (Vercel guide pattern)
+  const initialMessages = await loadChat(id);
 
   return (
     <Chat 
