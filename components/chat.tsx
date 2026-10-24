@@ -4,11 +4,10 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { useSession } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
-import { Send, Bot, User, AlertCircle, RotateCcw } from 'lucide-react';
+import { Send, Bot, User, AlertCircle, RotateCcw, MessageSquare, MessageSquarePlus, PanelLeft } from 'lucide-react';
 import { UIMessage } from 'ai';
 import { Streamdown } from 'streamdown';
 
@@ -16,13 +15,16 @@ interface ChatProps {
   conversationId: string;
   initialMessages?: UIMessage[];
   conversationTitle?: string;
+  conversations: { id: string; title: string }[];
 }
 
-export default function Chat({ conversationId, initialMessages = [], conversationTitle }: ChatProps) {
+export default function Chat({ conversationId, initialMessages = [], conversationTitle, conversations }: ChatProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const [input, setInput] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const previousStatusRef = useRef('ready');
 
   const { messages, sendMessage, status, error, stop } = useChat({
     id: conversationId, // Use conversation ID for persistence
@@ -50,42 +52,105 @@ export default function Chat({ conversationId, initialMessages = [], conversatio
     scrollToBottom();
   }, [messages, status]);
 
+  useEffect(() => {
+    if (
+      previousStatusRef.current !== 'ready' &&
+      status === 'ready'
+    ) {
+      router.refresh();
+    }
+    previousStatusRef.current = status;
+  }, [status, router]);
+
   if (!session) {
     return null;
   }
 
   return (
-    <div className="flex flex-col h-screen bg-white">
-      {/* Header */}
-      <div className="bg-white border-b border-rose-100 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Avatar className="h-9 w-9">
-              <AvatarImage src={session.user.image || ''} />
-              <AvatarFallback className="bg-rose-500 text-white font-medium">
-                {session.user.name?.charAt(0) || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h1 className="text-lg font-semibold text-gray-900">
-                {conversationTitle || 'AI Chat'}
-              </h1>
-              <p className="text-sm text-rose-500">Chat with AI Assistant</p>
-            </div>
-          </div>
-          <Button 
-            variant="outline" 
-            onClick={() => router.push('/dashboard')}
-            className="border-rose-200 text-rose-600 hover:bg-rose-50"
-          >
-            Back to Dashboard
-          </Button>
-        </div>
-      </div>
+    <div className="flex h-screen bg-white">
+      {sidebarOpen && (
+        <button
+          aria-label="Close conversation history"
+          className="fixed inset-0 z-10 bg-black/30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      <aside className={`${sidebarOpen ? 'flex' : 'hidden md:flex'} fixed inset-y-0 left-0 z-20 w-72 flex-col border-r border-rose-100 bg-rose-50/50 p-4 md:relative md:w-64`}>
+        <Button
+          onClick={() => {
+            setSidebarOpen(false);
+            router.push('/chat');
+          }}
+          className="mb-6 w-full justify-start gap-2 bg-rose-500 text-white hover:bg-rose-600"
+        >
+          <MessageSquarePlus className="h-4 w-4" />
+          New chat
+        </Button>
+        <h2 className="mb-3 px-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Recent conversations
+        </h2>
+        <nav aria-label="Conversation history" className="flex-1 space-y-1 overflow-y-auto">
+          {conversations.length === 0 ? (
+            <p className="px-2 py-3 text-sm text-gray-500">Your chats will appear here.</p>
+          ) : conversations.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => {
+                setSidebarOpen(false);
+                router.push(`/chat/${item.id}`);
+              }}
+              title={item.title}
+              className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                item.id === conversationId
+                  ? 'bg-rose-100 font-medium text-rose-700'
+                  : 'text-gray-700 hover:bg-rose-100/70'
+              }`}
+            >
+              <MessageSquare className="h-4 w-4 shrink-0" />
+              <span className="truncate">{item.title}</span>
+            </button>
+          ))}
+        </nav>
+      </aside>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-4xl mx-auto space-y-6">
+      <main className="flex min-w-0 flex-1 flex-col">
+        <header className="border-b border-rose-100 bg-white px-4 py-4 sm:px-6">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Open conversation history"
+                className="shrink-0 text-rose-600 md:hidden"
+                onClick={() => setSidebarOpen(true)}
+              >
+                <PanelLeft className="h-5 w-5" />
+              </Button>
+              <Avatar className="h-9 w-9 shrink-0">
+                <AvatarImage src={session.user.image || ''} />
+                <AvatarFallback className="bg-rose-500 font-medium text-white">
+                  {session.user.name?.charAt(0) || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <h1 className="truncate text-lg font-semibold text-gray-900">
+                  {conversationTitle || 'AI Chat'}
+                </h1>
+                <p className="text-sm text-rose-500">Chat with AI Assistant</p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => router.push('/dashboard')}
+              className="shrink-0 border-rose-200 text-rose-600 hover:bg-rose-50"
+            >
+              Back to Dashboard
+            </Button>
+          </div>
+        </header>
+
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="mx-auto max-w-4xl space-y-6">
           {messages.length === 0 && (
             <div className="text-center py-20">
               <div className="w-16 h-16 mx-auto mb-6 bg-rose-100 rounded-full flex items-center justify-center">
@@ -95,7 +160,7 @@ export default function Chat({ conversationId, initialMessages = [], conversatio
                 Start a conversation
               </h3>
               <p className="text-gray-500">
-                Ask me anything! I'm here to help.
+                Ask me anything! I&apos;m here to help.
               </p>
             </div>
           )}
@@ -216,12 +281,11 @@ export default function Chat({ conversationId, initialMessages = [], conversatio
           
           {/* Invisible element to scroll to */}
           <div ref={messagesEndRef} />
+          </div>
         </div>
-      </div>
 
-      {/* Input */}
-      <div className="bg-white border-t border-rose-100 p-6">
-        <form
+        <div className="border-t border-rose-100 bg-white p-6">
+          <form
           onSubmit={(e) => {
             e.preventDefault();
             if (input.trim() && status === 'ready') {
@@ -247,8 +311,9 @@ export default function Chat({ conversationId, initialMessages = [], conversatio
               <Send className="h-4 w-4" />
             </Button>
           </div>
-        </form>
-      </div>
+          </form>
+        </div>
+      </main>
     </div>
   );
 }

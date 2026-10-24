@@ -1,7 +1,7 @@
 import { UIMessage } from 'ai';
 import { db } from '@/db/drizzle';
 import { conversation, message } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
 /**
@@ -95,6 +95,15 @@ export async function saveChat({ chatId, messages }: { chatId: string; messages:
     console.log('Inserting message data:', messageData);
     await db.insert(message).values(messageData);
     console.log('Messages inserted successfully');
+
+    const firstUserMessage = newMessages.find(msg => msg.role === 'user');
+    const firstUserText = firstUserMessage?.parts.find(part => part.type === 'text');
+    if (firstUserText?.type === 'text') {
+      await db
+        .update(conversation)
+        .set({ title: firstUserText.text.slice(0, 60), updatedAt: new Date() })
+        .where(and(eq(conversation.id, chatId), eq(conversation.title, 'New Conversation')));
+    }
   } else {
     console.log('No new messages to insert');
   }
@@ -117,11 +126,41 @@ export async function saveMessages(conversationId: string, messages: UIMessage[]
  * Get user's conversations
  */
 export async function getUserConversations(userId: string) {
-  return await db
+  const conversations = await db
     .select()
     .from(conversation)
     .where(eq(conversation.userId, userId))
     .orderBy(desc(conversation.updatedAt));
+
+  if (conversations.length === 0) {
+    return conversations;
+  }
+
+  const firstMessages = await db
+    .select({
+      conversationId: message.conversationId,
+      content: message.content,
+    })
+    .from(message)
+    .where(and(
+      inArray(message.conversationId, conversations.map(item => item.id)),
+      eq(message.role, 'user'),
+    ))
+    .orderBy(message.createdAt);
+
+  const titles = new Map<string, string>();
+  for (const item of firstMessages) {
+    if (!titles.has(item.conversationId)) {
+      titles.set(item.conversationId, item.content.slice(0, 60));
+    }
+  }
+
+  return conversations.map(item => ({
+    ...item,
+    title: item.title === 'New Conversation'
+      ? titles.get(item.id) || item.title
+      : item.title,
+  }));
 }
 
 /**
